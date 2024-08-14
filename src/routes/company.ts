@@ -3,7 +3,9 @@ import Company from "../models/company.model"
 
 export default Router()
     .get("/", (req: Request, res: Response) => {
-        res.send("faz o B")
+        Company.findOne({ name: "Carlinhos LTDA" }).then(doc => {
+            res.status(200).json(doc?.toObject())
+        })
     })
     .post("/create", (req: Request, res: Response) => {
         Company.create({
