@@ -18,4 +18,4 @@ export default model("Users", new Schema({
         enum: ['worker', 'admin'],
         required: true
     }
-}))
+}, { timestamps: true }))

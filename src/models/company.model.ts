@@ -25,4 +25,4 @@ export default model("Companies", new Schema({
         type: [Types.ObjectId],
         default: []
     }
-}))
+}, { timestamps: true }))

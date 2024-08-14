@@ -9,4 +9,4 @@ export default model("Tokens", new Schema({
         type: String,
         required: true
     },
-}))
+}, { timestamps: true }))

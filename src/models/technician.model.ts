@@ -13,4 +13,4 @@ export default model("Technicians", new Schema({
         type: Boolean,
         required: true
     }
-}))
+}, { timestamps: true }))

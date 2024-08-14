@@ -29,4 +29,4 @@ export default model("Tickets", new Schema({
         }],
         default: []
     }
-}))
+}, { timestamps: true }))
