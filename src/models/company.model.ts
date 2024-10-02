@@ -1,10 +1,7 @@
 import { Schema, model, Types } from "mongoose";
+import { ICompany } from "../types";
 
-export default model("Companies", new Schema({
-    name: {
-        type: String,
-        required: true
-    },
+export default model<ICompany>("Companies", new Schema<ICompany>({
     email: {
         type: String,
         required: true

@@ -9,13 +9,17 @@ export default model("Users", new Schema({
         type: String,
         required: true
     },
-    key: {
+    password: {
         type: String,
         required: true
     },
     type: {
         type: String,
-        enum: ['worker', 'admin'],
+        enum: ['worker', 'admin', 'technician'],
         required: true
+    },
+    avaible: {
+        type: String,
+        default: true
     }
 }, { timestamps: true }))

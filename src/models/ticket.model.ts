@@ -28,5 +28,16 @@ export default model("Tickets", new Schema({
             views: [Types.ObjectId]
         }],
         default: []
+    },
+    solved: {
+        type: {
+            by: Types.ObjectId,
+            justification: String,
+            date: {
+                type: Date,
+                default: Date.now
+            }
+        },
+        default: null
     }
 }, { timestamps: true }))
