@@ -8,6 +8,6 @@ export default Router()
     .post("/create", (req: Request, res: Response) => {
         res.status(200).json(req.body)
     })
-    .get("/login", Login, (req: Request, res: Response) => {
+    .get("/auth", (req: Request, res: Response) => {
         
     })

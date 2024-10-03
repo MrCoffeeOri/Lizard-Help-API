@@ -15,7 +15,7 @@ export default model("Users", new Schema({
     },
     type: {
         type: String,
-        enum: ['worker', 'admin', 'technician'],
+        enum: ['owner', 'worker', 'admin', 'technician'],
         required: true
     },
     avaible: {
