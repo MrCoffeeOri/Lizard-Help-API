@@ -6,7 +6,9 @@ declare module 'express-session' { // Declaração para adicionar o tipo 'User' 
     }
   }
 
-export interface ICompany extends ISessionUser {
+export interface ICompany {
+    name: string,
+    email: string,
     owner: Types.ObjectId,
     phone: string,
     cid: string,
@@ -17,4 +19,9 @@ export interface ISessionUser {
     name: string,
     email: string,
     password: string,
+}
+
+export interface IUser extends ISessionUser {
+  type: string,
+  avaible: boolean,
 }

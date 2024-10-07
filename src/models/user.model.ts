@@ -1,6 +1,7 @@
 import { Schema, model } from "mongoose";
+import { IUser } from "../types";
 
-export default model("Users", new Schema({
+export default model<IUser>("Users", new Schema<IUser>({
     name: {
         type: String,
         required: true
@@ -19,7 +20,7 @@ export default model("Users", new Schema({
         required: true
     },
     avaible: {
-        type: String,
+        type: Boolean,
         default: true
     }
 }, { timestamps: true }))

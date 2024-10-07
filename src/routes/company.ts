@@ -6,17 +6,18 @@ import Login from "../middlewares/login";
 
 export default Router()
     .get("/", Login, async (req: Request, res: Response) => {
-        res.status(200).json((await Company.findOne({ name: "Carlinhos LTDA" }))?.toObject())
+        
     })
     .post("/create", async (req: Request, res: Response) => {
-        const company = (await Company.create({
-            name: req.body.name,
-            email: req.body.email,
-            password: req.body.password,
-            phone: req.body.phone,
-            cid: req.body.cid
-        })).toObject()
-        res.status(201).json(company)
+        const { name, email, password, phone, cid, owner } = req.body;
+        if (!name || !email || !password || !phone || !cid || !owner)
+            return res.status(400).json({ msg: "Dados incompletos" });
+        try {
+            const company = (await Company.create({ name, email, password, phone, cid, owner })).toObject();
+            res.status(201).json(company);
+        } catch (error) {
+            res.status(500).json({ msg: `Falha ma criação da empresa: ${error}` })
+        }
     })
     .post("/login", async (req: Request, res: Response) => {
         if (req.signedCookies.authToken) {
