@@ -1,11 +1,11 @@
 import { Router, Request, Response } from "express"
 import Company from "../models/company.model";
 import User from "../models/user.model";
-import { IUser } from "../types";
+import { ISessionUser, IUser } from "../types";
 
 export default Router()
     .get("/", (req: Request, res: Response) => {
-        res.send(req.session.user)
+        res.send("ALERT TIAGUEIDO")
     })
     .post("/create", async (req: Request, res: Response) => {
         if (!req.body.email || !req.body.password || !req.body.name || !req.body.type) 
@@ -22,6 +22,9 @@ export default Router()
     })
     .post("/auth", async (req: Request, res: Response) => {
         const user = (await User.findOne({ email: req.session.user ? req.session.user.email : req.body.email }))?.toObject()
-        if (!user || user.password !== (req.session.user?.password || req.body.password)) return res.status(401).json({ error: "Credenciais inválidas" })
+        if (!user || (user.password !== (req.session.user?.password || req.body.password))) 
+            return res.status(401).json({ error: "Credenciais inválidas" })
+        if (!req.session.user)
+            req.session.user = user as ISessionUser
         res.status(200).json(user.type === "owner" ? user : { ...user, ...(await Company.findOne({ owner: user._id }))?.toObject() })
     })

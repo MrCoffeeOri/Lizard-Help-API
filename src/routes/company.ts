@@ -9,11 +9,11 @@ export default Router()
         
     })
     .post("/create", async (req: Request, res: Response) => {
-        const { name, email, password, phone, cid, owner } = req.body;
-        if (!name || !email || !password || !phone || !cid || !owner)
+        const { name, email, phone, cid, owner } = req.body;
+        if (!name || !email || !phone || !cid || !owner)
             return res.status(400).json({ msg: "Dados incompletos" });
         try {
-            const company = (await Company.create({ name, email, password, phone, cid, owner })).toObject();
+            const company = (await Company.create({ name, email, phone, cid, owner })).toObject();
             res.status(201).json(company);
         } catch (error) {
             res.status(500).json({ msg: `Falha ma criação da empresa: ${error}` })
