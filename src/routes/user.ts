@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express"
 import Company from "../models/company.model";
 import User from "../models/user.model";
-import { IUser } from "../types";
+import { ISessionUser, IUser } from "../types";
 
 export default Router()
     .get("/", (req: Request, res: Response) => {
@@ -12,10 +12,12 @@ export default Router()
             return res.status(400).json({ error: "Dados incompletos" })
         if (await User.findOne({ email: req.body.email }))
             return res.status(400).json({ error: "Email já utilizado" })
+        const newUser = (await User.create({ email: req.body.email, password: req.body.password, name: req.body.name, type: req.body.type, avaible: true })).toObject()
+        req.session.user = newUser as ISessionUser
         res.status(201).json({ 
             msg: "Usuário criado com sucesso", 
             user: { 
-                ...(await User.create({ email: req.body.email, password: req.body.password, name: req.body.name, type: req.body.type, avaible: true })).toObject(), 
+                ...newUser, 
                 password: undefined, 
             } 
         })
