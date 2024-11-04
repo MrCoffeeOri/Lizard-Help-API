@@ -12,10 +12,12 @@ export default Router()
             return res.status(400).json({ error: "Dados incompletos" })
         if (await User.findOne({ email: req.body.email }))
             return res.status(400).json({ error: "Email já utilizado" })
+        const newUser = (await User.create({ email: req.body.email, password: req.body.password, name: req.body.name, type: req.body.type, avaible: true })).toObject()
+        req.session.user = newUser as ISessionUser
         res.status(201).json({ 
             msg: "Usuário criado com sucesso", 
             user: { 
-                ...(await User.create({ email: req.body.email, password: req.body.password, name: req.body.name, type: req.body.type, avaible: true })).toObject(), 
+                ...newUser, 
                 password: undefined, 
             } 
         })
@@ -26,5 +28,11 @@ export default Router()
             return res.status(401).json({ error: "Credenciais inválidas" })
         if (!req.session.user)
             req.session.user = user as ISessionUser
-        res.status(200).json(user.type === "owner" ? user : { ...user, ...(await Company.findOne({ owner: user._id }))?.toObject() })
+        res.status(200).json({ 
+            user: { 
+                ...user, 
+                company: (await Company.findOne({ owner: user._id }))?.toObject() 
+            }, 
+            msg: "Autenticação completa" 
+        })
     })
