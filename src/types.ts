@@ -9,10 +9,10 @@ declare module 'express-session' { // Declaração para adicionar o tipo 'User' 
 export interface ICompany {
     name: string,
     email: string,
-    owner: Types.ObjectId,
+    owner: string,
     phone: string,
     cid: string,
-    people: [Types.ObjectId]
+    people: [string]
 }
 
 export interface ISessionUser {
