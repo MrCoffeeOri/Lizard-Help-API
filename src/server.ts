@@ -1,5 +1,5 @@
 import { config } from 'dotenv';
-import express, { json } from 'express';
+import express, { json, Request, Response } from 'express';
 import session from 'express-session';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -24,6 +24,7 @@ app.use(json())
 app.use("/user", user)
 app.use("/company", company)
 app.use("/tickets", () => {})
+app.get("/test", (req: Request, res: Response) => res.status(200).json({ msg: "Server funcionando 🦎" }))
 connect(process.env.API_URI as string)
     .then(() => app.listen(process.env.PORT || 5000, () => {
         if (process.env.NODE_ENV === 'development') {

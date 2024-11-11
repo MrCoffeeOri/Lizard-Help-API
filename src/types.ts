@@ -2,7 +2,7 @@ import { Types } from "mongoose";
 
 declare module 'express-session' { // Declaração para adicionar o tipo 'User' a variavel de sessão
     interface SessionData {
-      user: ISessionUser;
+      user: IUser;
     }
   }
 
@@ -15,13 +15,11 @@ export interface ICompany {
     people: [Types.ObjectId]
 }
 
-export interface ISessionUser {
-    name: string,
-    email: string,
-    password: string,
-}
-
-export interface IUser extends ISessionUser {
+export interface IUser {
+  name: string,
+  email: string,
+  password: string,
   type: string,
   avaible: boolean,
+  _id: Types.ObjectId
 }
