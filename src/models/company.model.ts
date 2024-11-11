@@ -11,7 +11,7 @@ export default model<ICompany>("Companies", new Schema<ICompany>({
         required: true
     },
     owner: {
-        type: Schema.Types.ObjectId,
+        type: String,
         require: true,
     },
     phone: {
@@ -23,7 +23,7 @@ export default model<ICompany>("Companies", new Schema<ICompany>({
         required: true
     },
     people: {
-        type: [Schema.Types.ObjectId],
+        type: [String],
         default: []
     }
 }, { timestamps: true }))
