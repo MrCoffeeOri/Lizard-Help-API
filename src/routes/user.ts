@@ -26,6 +26,6 @@ export default Router()
         if (!user || (user.password !== (req.session.user?.password || req.body.password))) 
             return res.status(401).json({ error: "Credenciais inválidas" })
         if (!req.session.user)
-            req.session.user = user as ISessionUser
+            req.session.user = user as IUser
         res.status(200).json({ msg: "Usuário logado com sucesso", user: user.type === "owner" ? { ...user, company: (await Company.findOne({ owner: user._id }))?.toObject() } : user })
     })
