@@ -37,9 +37,16 @@ app.use("/tickets", () => {})
 app.get("/test", (req: Request, res: Response) => res.status(200).json({ msg: "Server funcionando 🦎" }))
 
 io.on("connection", socket => {
+    socket.data.user = socket.handshake.auth.user
+    if (socket.data.user.type == "technician")
+        socket.join("technician")
+
     socket.on("ticket", async event => {
         const ticket = await Ticket.create({ by: event.data.by, title: event.data.title, description: event.data.description, tags: event.data.tags })
-        socket.emit("ticket", {
+        socket
+            .to(socket.id)
+            .to("technician"/*(await io.sockets.fetchSockets()).filter(_socket => _socket.data.user.type == "technician").map(_socket => _socket.data.user.type)*/)
+            .emit("ticket", {
             action: event.action,
             data: ticket.toObject()
         })

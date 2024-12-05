@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express"
 import Company from "../models/company.model";
 import User from "../models/user.model";
 import { IUser } from "../types";
+import Ticket from "../models/ticket.model";
 
 export default Router()
     .get("/", (req: Request, res: Response) => {
@@ -21,5 +22,12 @@ export default Router()
             return res.status(401).json({ error: "Credenciais inválidas" })
         if (!req.session.user)
             req.session.user = user as IUser
-        res.status(200).json({ msg: "Usuário logado com sucesso", user: user.type === "owner" ? { ...user, company: (await Company.findOne({ owner: user._id }))?.toObject() } : user })
+        res.status(200).json({ 
+            msg: "Usuário logado com sucesso", 
+            user: 
+                user.type === "owner" ? 
+                { ...user, company: (await Company.findOne({ owner: user._id }))?.toObject() } 
+                : 
+                { ...user, tickets: (await Ticket.find({ by: req.session.user.name })) } 
+        })
     })
