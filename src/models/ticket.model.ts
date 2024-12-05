@@ -17,18 +17,6 @@ export default model("Tickets", new Schema({
         type: String,
         required: true
     },
-    messages: {
-        type: [{
-            by:  String,
-            text: String,
-            date: {
-                type: Date,
-                default: Date.now
-            },
-            views: [Types.ObjectId]
-        }],
-        default: []
-    },
     solved: {
         type: {
             by: Types.ObjectId,

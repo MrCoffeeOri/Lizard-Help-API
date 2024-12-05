@@ -2,13 +2,24 @@ import { config } from 'dotenv';
 import express, { json, Request, Response } from 'express';
 import session from 'express-session';
 import cors from 'cors';
-import cookieParser from 'cookie-parser';
+import { Server } from 'socket.io';
 import user from './routes/user';
 import company from './routes/company';
 import { connect } from 'mongoose';
+import { createServer } from 'http';
+import Ticket from './models/ticket.model';
 
 const app = express()
+const server = createServer(app)
+const io = new Server(server, {
+    cors: { 
+        origin: "http://localhost:5173",
+        methods: ["GET", "POST"]
+    },
+})
+
 config()
+app.use(cors())
 app.use(session({
     secret: process.env.SESSION_SECRET || "test",
     resave: false,
@@ -19,14 +30,24 @@ app.use(session({
         signed: true
     }
 }))
-app.use(cors({ origin: '*' }))
 app.use(json())
 app.use("/user", user)
 app.use("/company", company)
 app.use("/tickets", () => {})
 app.get("/test", (req: Request, res: Response) => res.status(200).json({ msg: "Server funcionando 🦎" }))
+
+io.on("connection", socket => {
+    socket.on("ticket", async event => {
+        const ticket = await Ticket.create({ by: event.data.by, title: event.data.title, description: event.data.description, tags: event.data.tags })
+        socket.emit("ticket", {
+            action: event.action,
+            data: ticket.toObject()
+        })
+    })
+})
+
 connect(process.env.API_URI as string)
-    .then(() => app.listen(process.env.PORT || 5000, () => {
+    .then(() => server.listen(process.env.PORT || 5000, () => {
         if (process.env.NODE_ENV === 'development') {
             console.log("http://localhost:5000");
         }
