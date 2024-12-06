@@ -1,10 +1,9 @@
 import { Router, Request, Response } from "express"
 import Company from "../models/company.model"
 import User from "../models/user.model";
-import authRequired from "../middlewares/authRequired";
 
 export default Router()
-    .post("/create", authRequired, async (req: Request, res: Response) => {
+    .post("/create", async (req: Request, res: Response) => {
         const { name, email, phone, cid, owner } = req.body;
         if (!name || !email || !phone || !cid || !owner)
             return res.status(400).json({ error: "Dados incompletos" });
@@ -15,7 +14,7 @@ export default Router()
             res.status(500).json({ error: `Falha ma criação da empresa: ${error}` })
         }
     })
-    .post("/people", authRequired, async (req: Request, res: Response) => {
+    .post("/people", async (req: Request, res: Response) => {
         const type = req.session.user.type === "owner" ? req.body.type : "worker"
         try {
           const newUser = await User.create({

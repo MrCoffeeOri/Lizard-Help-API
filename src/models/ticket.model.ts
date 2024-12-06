@@ -27,5 +27,20 @@ export default model("Tickets", new Schema({
             }
         },
         default: null
+    },
+    status: {
+        type: String,
+        enum: ['open', 'closed', 'ongoing'],
+        default: false
+    },
+    service: {
+        type: {
+            by: Types.ObjectId,
+            date: {
+                type: Date,
+                default: Date.now
+            }
+        },
+        default: null
     }
 }, { timestamps: true }))
