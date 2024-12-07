@@ -42,5 +42,10 @@ export default model("Tickets", new Schema({
             }
         },
         default: null
+    },
+    priority: {
+        type: String,
+        enum: ['high', 'medium', 'low'],
+        default: false
     }
 }, { timestamps: true }))

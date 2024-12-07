@@ -56,9 +56,9 @@ io.on("connection", socket => {
             case "create":
                 const ticket = await Ticket.create({ by: event.data.by, title: event.data.title, description: event.data.description, tags: event.data.tags })
             case "delete":
-                Ticket.findByIdAndDelete(event.data._id)
+                await Ticket.findByIdAndDelete(event.data._id)
             case "edit":
-                Ticket.findByIdAndUpdate(event.data._id, { by: event.data.by, title: event.data.title, description: event.data.description, tags: event.data.tags })
+                await Ticket.findByIdAndUpdate(event.data._id, { by: event.data.by, title: event.data.title, description: event.data.description, tags: event.data.tags })
             default:
                 socket.to(socket.id).to("technician").emit("ticket", { action: event.action, data: event.action == "create" ? ticket.toObject() : event.data })
                 break;

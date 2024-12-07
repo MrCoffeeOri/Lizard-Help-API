@@ -3,6 +3,7 @@ import Company from "../models/company.model";
 import User from "../models/user.model";
 import { IUser } from "../types";
 import Ticket from "../models/ticket.model";
+import Chat from "../models/chats.model";
 
 export default Router()
     .get("/", (req: Request, res: Response) => {
@@ -23,12 +24,65 @@ export default Router()
             return res.status(401).json({ error: "Credenciais inválidas" })
         if (!req.session.user)
             req.session.user = user as IUser
+        if (user.type === "owner") {
+            var company = (await Company.aggregate([
+                { $match: { owner: user._id } },
+                {
+                    $lookup: {
+                        from: "users",
+                        localField: "people",
+                        foreignField: "_id",
+                        as: "peopleDetails" 
+                    }
+                },
+                {
+                    $lookup: {
+                        from: "users",
+                        pipeline: [
+                            { $match: { type: "technician", avaible: true } },
+                            {
+                                $project: {
+                                    _id: 1,
+                                    name: 1,
+                                    email: 1,
+                                    avaible: 1
+                                }
+                            }
+                        ],
+                        as: "availableTechnicians"
+                    }
+                },
+                {
+                    $project: {
+                        name: 1,
+                        email: 1,
+                        owner: 1,
+                        phone: 1,
+                        cid: 1,
+                        people: 1,
+                        peopleDetails: {
+                            _id: 1,
+                            name: 1,
+                            email: 1,
+                            type: 1,
+                            avaible: 1
+                        },
+                        availableTechnicians: 1 
+                    }
+                },
+                { $limit: 1 }
+            ]))[0]
+        }
         res.status(200).json({ 
             msg: "Usuário logado com sucesso", 
             user: 
                 user.type === "owner" ? 
-                { ...user, company: (await Company.findOne({ owner: user._id }))?.toObject() } 
+                { ...user, company: company } 
                 : 
-                { ...user, tickets: (await Ticket.find(user.type === "technician" ? { $or: [{ status: "ongoing", "service.by": req.session.user._id }, { status: "open" }]  } : { by: req.session.user.name })) } 
+                { 
+                    ...user, 
+                    tickets: await Ticket.find(user.type === "technician" ? { $or: [{ status: "ongoing", "service.by": req.session.user._id }, { status: "open" }]  } : { by: req.session.user.name }),
+                    chats: await Chat.find({ $or: [{ client: user._id }, { technician: user._id }] })
+                } 
         })
     })
