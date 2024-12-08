@@ -15,13 +15,13 @@ export default Router()
         }
     })
     .post("/people", async (req: Request, res: Response) => {
-        const type = req.session.user.type === "owner" ? req.body.type : "worker"
         try {
           const newUser = await User.create({
             name: req.body.name,
             email: req.body.email,
-            password: req.body.password || crypto.randomUUID(),
-            type
+            password: req.body.password,
+            type: req.body.type,
+            avaible: false
           })
           await Company.findOneAndUpdate(
             {
@@ -35,7 +35,7 @@ export default Router()
               $push: { people: newUser._id }
             }
           )
-          res.status(201).json({ msg: `Novo ${type == "admin" ? "administrador" : "funcionário"} adicionado` })
+          res.status(201).json({ msg: `Novo ${req.body.type == "admin" ? "administrador" : "funcionário"} adicionado`, user: { ...newUser, password: undefined } })
         } catch (error) {
           res.status(500).json({ error: "Erro interno ao criar usuário" })
         }

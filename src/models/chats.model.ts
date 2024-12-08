@@ -3,6 +3,10 @@ import { Schema, model, Types } from "mongoose";
 export default model("Chats", new Schema({
     messages: {
         type: [{
+            _id: {
+                type: Types.ObjectId,
+                default: Types.ObjectId.generate
+            },
             content: String,
             by: Types.ObjectId,
             createdAt: {
@@ -18,11 +22,17 @@ export default model("Chats", new Schema({
         required: true
     },
     technician: {
-        type: Types.ObjectId,
+        type: {
+            _id: Types.ObjectId,
+            name: String
+        },
         required: true
     },
     client: {
-        type: Types.ObjectId,
+        type: {
+            _id: Types.ObjectId,
+            name: String
+        },
         required: true
     }
 }, { timestamps: true }))

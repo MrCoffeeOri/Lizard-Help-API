@@ -32,7 +32,7 @@ export default Router()
                         from: "users",
                         localField: "people",
                         foreignField: "_id",
-                        as: "peopleDetails" 
+                        as: "people"
                     }
                 },
                 {
@@ -53,21 +53,94 @@ export default Router()
                     }
                 },
                 {
+                    $lookup: {
+                        from: "tickets",
+                        let: { peopleIds: "$people._id" }, 
+                        pipeline: [
+                            { 
+                                $match: { 
+                                    $expr: {
+                                        $or: [
+                                            { $in: ["$client._id", "$$peopleIds"] },
+                                            { $eq: ["$client._id", user._id] }
+                                        ]
+                                    }
+                                } 
+                            },
+                            {
+                                $project: {
+                                    _id: 1,
+                                    title: 1,
+                                    description: 1,
+                                    status: 1,
+                                    priority: 1,
+                                    createdAt: 1
+                                }
+                            }
+                        ],
+                        as: "tickets"
+                    }
+                },
+                {
+                    $lookup: {
+                        from: "chats",
+                        let: {
+                            peopleIds: "$people._id"
+                        },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: {
+                                        $or: [
+                                            { $in: ["$client._id", "$$peopleIds"] },
+                                            { $eq: ["$client._id", user._id] }
+                                        ]
+                                    }
+                                }
+                            },
+                            {
+                                $group: {
+                                    _id: "$_id",
+                                    messages: { $push: "$messages" },
+                                    technician: { $first: "$technician" },
+                                    client: { $first: "$client" }
+                                }
+                            },
+                            {
+                                $project: {
+                                    _id: 1,
+                                    messages: 1,
+                                    technician: 1,
+                                    client: 1,
+                                    lastMessageDate: { $arrayElemAt: ["$messages.createdAt", 0] }
+                                }
+                            },
+                            {
+                                $sort: {
+                                    "lastMessageDate": -1
+                                }
+                            }
+                        ],
+                        as: "chats"
+                    }
+                },
+                {
                     $project: {
                         name: 1,
                         email: 1,
                         owner: 1,
                         phone: 1,
                         cid: 1,
-                        people: 1,
-                        peopleDetails: {
+                        people: {
                             _id: 1,
                             name: 1,
                             email: 1,
                             type: 1,
                             avaible: 1
                         },
-                        availableTechnicians: 1 
+                        availableTechnicians: 1,
+                        tickets: 1,
+                        chats: 1
                     }
                 },
                 { $limit: 1 }
@@ -75,14 +148,11 @@ export default Router()
         }
         res.status(200).json({ 
             msg: "Usuário logado com sucesso", 
-            user: 
-                user.type === "owner" ? 
-                { ...user, company: company } 
-                : 
-                { 
-                    ...user, 
-                    tickets: await Ticket.find(user.type === "technician" ? { $or: [{ status: "ongoing", "service.by": req.session.user._id }, { status: "open" }]  } : { by: req.session.user.name }),
-                    chats: await Chat.find({ $or: [{ client: user._id }, { technician: user._id }] })
-                } 
-        })
+            user: { 
+                ...user, 
+                tickets: company?.tickets?.filter((ticket: any) => ticket.by._id == user._id) || await Ticket.find(user.type === "technician" ? { $or: [{ status: "ongoing", "service.by": req.session.user._id }, { status: "open" }] } : { "by._id": req.session.user._id }).sort({ priority: 1,createdAt: -1 }),
+                chats: company?.chats?.filter((chat: any) => chat.client._id == user._id) || await Chat.find({ $or: [{ "client._id": user._id }, { "technician._id": user._id }] }),
+                company: company
+            } 
+        });
     })

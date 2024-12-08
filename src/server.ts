@@ -66,7 +66,14 @@ io.on("connection", socket => {
     })
 
     socket.on("chat", event => {
+        switch (event.action) {
+            case "create":
+                
+                break;
         
+            default:
+                break;
+        }
     })
 
     

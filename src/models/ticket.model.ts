@@ -14,7 +14,10 @@ export default model("Tickets", new Schema({
         required: true
     },
     by: {
-        type: String,
+        type: {
+            name: String,
+            _id: Types.ObjectId
+        },
         required: true
     },
     solved: {
@@ -35,7 +38,10 @@ export default model("Tickets", new Schema({
     },
     service: {
         type: {
-            by: Types.ObjectId,
+            by: {
+                name: String,
+                _id: Types.ObjectId
+            },
             date: {
                 type: Date,
                 default: Date.now
