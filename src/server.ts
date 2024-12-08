@@ -6,9 +6,11 @@ import { Server } from 'socket.io';
 import user from './routes/user';
 import company from './routes/company';
 import { connect } from 'mongoose';
+import MongoDBStore from "connect-mongodb-session";
 import { createServer } from 'http';
 import Ticket from './models/ticket.model';
 import authRequired from "./middlewares/authRequired";
+import User from './models/user.model';
 
 
 declare module 'http' {
@@ -17,52 +19,66 @@ declare module 'http' {
     }
   }
 
+const corsConfigs = { 
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
+}
+const mongoStore = MongoDBStore(session)
+const store = new mongoStore({
+    collection: "userSessions",
+    databaseName: "lizardhelp",
+    uri: "mongodb+srv://Renan:RPee55230@cluster0.89mpfoy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+    expires: 1000,
+})
 const app = express()
 const server = createServer(app)
-const io = new Server(server, {
-    cors: { 
-        origin: "http://localhost:5173",
-        methods: ["GET", "POST"]
-    },
-})
-const sharedSession = session({
+export const io = new Server(server, { cors: corsConfigs })
+
+config()
+app.use(cors(corsConfigs))
+app.use(session({
+    store,
+    name: "userSession",
     secret: process.env.SESSION_SECRET || "test",
     resave: false,
     saveUninitialized: false, 
     cookie: {
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 1000 * 60 * 60 * 24,
-        signed: true
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' exige HTTPS
+        secure: process.env.NODE_ENV === 'production', // Requer HTTPS em produção
+        maxAge: 1000 * 60 * 60 * 24, // 24 horas
+        httpOnly: true
     }
-})
-
-config()
-app.use(cors())
-app.use(sharedSession)
+}))
 app.use(json())
 app.use("/user", user)
 app.use("/company", authRequired, company)
 app.use("/tickets", authRequired, () => {})
 app.get("/test", (req: Request, res: Response) => res.status(200).json({ msg: "Server funcionando 🦎" }))
 
-io.engine.use(sharedSession)
 io.on("connection", socket => {
-    /*socket.data.user = socket.request.session.user
-    if (socket.data.user.type == "technician")
-        socket.join("technician")*/
+    socket.on("auth", event => {
+        socket.data.user = event.user
+        socket.join(socket.id)
+        if (socket.data.user.companyID) {
+            io.to(socket.data.user.companyID).volatile.emit("user", { action: "avaible", data: { avaible: true, userID: user._id } })
+            socket.data.user.type == "owner" && socket.join(socket.data.user.companyID)
+        }
+        if (socket.data.user.type == "technician")
+            socket.join("technician")
+    })
 
     socket.on("ticket", async event => {
+        let ticket;
         switch (event.action) {
             case "create":
-                const ticket = await Ticket.create({ by: event.data.by, title: event.data.title, description: event.data.description, tags: event.data.tags })
+                ticket = await Ticket.create({ by: event.data.by, title: event.data.title, description: event.data.description, tags: event.data.tags })
             case "delete":
                 await Ticket.findByIdAndDelete(event.data._id)
             case "edit":
                 await Ticket.findByIdAndUpdate(event.data._id, { by: event.data.by, title: event.data.title, description: event.data.description, tags: event.data.tags })
-            default:
-                socket.to(socket.id).to("technician").emit("ticket", { action: event.action, data: event.action == "create" ? ticket.toObject() : event.data })
-                break;
         }
+        io.to(socket.id).to(event.data.companyID).to("technician").emit("ticket", { action: event.action, data: event.action == "create" ? ticket.toObject() : event.data })
     })
 
     socket.on("chat", event => {
@@ -76,7 +92,12 @@ io.on("connection", socket => {
         }
     })
 
-    
+    socket.on("disconnect", async () => {
+        if (socket.data.user) {
+            io.to(socket.data.user.companyID).volatile.emit("user", { action: "avaible", data: { avaible: false, userID: socket.data.user._id } })
+            await User.findByIdAndUpdate(socket.data.user._id, { avaible: false })
+        }
+    })
 })
 
 connect(process.env.API_URI as string)

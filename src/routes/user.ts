@@ -4,6 +4,7 @@ import User from "../models/user.model";
 import { IUser } from "../types";
 import Ticket from "../models/ticket.model";
 import Chat from "../models/chats.model";
+import { io } from "../server";
 
 export default Router()
     .get("/", (req: Request, res: Response) => {
@@ -19,14 +20,15 @@ export default Router()
         res.status(201).json({ msg: "Usuário criado com sucesso", user: { ...newUser, password: undefined } }) 
     })
     .post("/auth", async (req: Request, res: Response) => {
-        const user = (await User.findOne({ email: req.session.user?.email || req.body.email }))?.toObject()
+        const user = (await User.findOneAndUpdate({ email: req.session.user?.email || req.body.email }, { avaible: true }, { new: true }))?.toObject()
         if (!user || (user.password !== (req.session.user?.password || req.body.password))) 
             return res.status(401).json({ error: "Credenciais inválidas" })
         if (!req.session.user)
             req.session.user = user as IUser
-        if (user.type === "owner") {
-            var company = (await Company.aggregate([
-                { $match: { owner: user._id } },
+        let company = undefined
+        if (user.type == "owner") {
+            company = (await Company.aggregate([
+                { $match: { owner: user._id.toString() } },
                 {
                     $lookup: {
                         from: "users",
@@ -61,21 +63,11 @@ export default Router()
                                 $match: { 
                                     $expr: {
                                         $or: [
-                                            { $in: ["$client._id", "$$peopleIds"] },
-                                            { $eq: ["$client._id", user._id] }
+                                            { $in: ["$by._id", "$$peopleIds"] },
+                                            { $eq: ["$by._id", user._id] }
                                         ]
                                     }
                                 } 
-                            },
-                            {
-                                $project: {
-                                    _id: 1,
-                                    title: 1,
-                                    description: 1,
-                                    status: 1,
-                                    priority: 1,
-                                    createdAt: 1
-                                }
                             }
                         ],
                         as: "tickets"
@@ -134,6 +126,7 @@ export default Router()
                         people: {
                             _id: 1,
                             name: 1,
+                            password: 1,
                             email: 1,
                             type: 1,
                             avaible: 1
@@ -145,14 +138,15 @@ export default Router()
                 },
                 { $limit: 1 }
             ]))[0]
-        }
+        } else if (user.type == "worker")
+            company = await Company.findOne({ people: user._id }, { people: 0 });
         res.status(200).json({ 
             msg: "Usuário logado com sucesso", 
             user: { 
                 ...user, 
-                tickets: company?.tickets?.filter((ticket: any) => ticket.by._id == user._id) || await Ticket.find(user.type === "technician" ? { $or: [{ status: "ongoing", "service.by": req.session.user._id }, { status: "open" }] } : { "by._id": req.session.user._id }).sort({ priority: 1,createdAt: -1 }),
-                chats: company?.chats?.filter((chat: any) => chat.client._id == user._id) || await Chat.find({ $or: [{ "client._id": user._id }, { "technician._id": user._id }] }),
+                tickets: await Ticket.find(user.type === "technician" ? { $or: [{ status: "ongoing", "service.by": req.session.user._id }, { status: "open" }] } : { "by._id": req.session.user._id }).sort({ priority: 1,createdAt: -1 }),
+                chats: await Chat.find({ $or: [{ "client._id": user._id }, { "technician._id": user._id }] }),
                 company: company
             } 
-        });
+        })
     })

@@ -1,4 +1,4 @@
-import { Schema, model } from "mongoose";
+import { Schema, Types, model } from "mongoose";
 import { ICompany } from "../types";
 
 export default model<ICompany>("Companies", new Schema<ICompany>({
@@ -23,7 +23,7 @@ export default model<ICompany>("Companies", new Schema<ICompany>({
         required: true
     },
     people: {
-        type: [String],
+        type: [Types.ObjectId],
         default: []
     }
 }, { timestamps: true }))

@@ -33,8 +33,8 @@ export default model("Tickets", new Schema({
     },
     status: {
         type: String,
-        enum: ['open', 'closed', 'ongoing'],
-        default: false
+        enum: ['open', 'closed', 'ongoing', 'waiting'],
+        default: 'waiting'
     },
     service: {
         type: {
@@ -52,6 +52,6 @@ export default model("Tickets", new Schema({
     priority: {
         type: String,
         enum: ['high', 'medium', 'low'],
-        default: false
+        default: 'low'
     }
 }, { timestamps: true }))
