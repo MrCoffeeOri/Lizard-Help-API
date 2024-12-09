@@ -7,16 +7,13 @@ import Chat from "../models/chats.model";
 import { io } from "../server";
 
 export default Router()
-    .get("/", (req: Request, res: Response) => {
-        res.status(200).json({ user: req.session.user, id: req.session.id })
-    })
     .post("/create", async (req: Request, res: Response) => {
         if (!req.body.email || !req.body.password || !req.body.name || !req.body.type) 
             return res.status(400).json({ error: "Dados incompletos" })
         if (await User.findOne({ email: req.body.email }))
             return res.status(400).json({ error: "Email já utilizado" })
-        const newUser = (await User.create({ email: req.body.email, password: req.body.password, name: req.body.name, type: req.body.type, avaible: true })).toObject()
-        req.session.user = newUser as IUser
+        const newUser = (await User.create({ email: req.body.email, password: req.body.password, name: req.body.name, type: req.body.type, avaible: req.body.avaible != undefined ? req.body.avaible : true })).toObject()
+        if (!req.session.user) req.session.user = newUser as IUser
         res.status(201).json({ msg: "Usuário criado com sucesso", user: { ...newUser, password: undefined } }) 
     })
     .post("/auth", async (req: Request, res: Response) => {
@@ -144,9 +141,14 @@ export default Router()
             msg: "Usuário logado com sucesso", 
             user: { 
                 ...user, 
-                tickets: await Ticket.find(user.type === "technician" ? { $or: [{ status: "ongoing", "service.by": req.session.user._id }, { status: "open" }] } : { "by._id": req.session.user._id }).sort({ priority: 1,createdAt: -1 }),
+                tickets: await Ticket.find(
+                    user.type === "technician" ? { $or: [{ status: "ongoing", "service.by": req.session.user._id }, { status: "open" }] } : 
+                    user.type === "worker" || user.type === "owner" ? { "by._id": req.session.user._id } : 
+                    {}
+                ).sort({ priority: 1, createdAt: -1 }),
                 chats: await Chat.find({ $or: [{ "client._id": user._id }, { "technician._id": user._id }] }),
-                company: company
+                company: company,
+                technicians: user.type == "admin" ? await User.find({ type: "technician" }, { password: 0, type: 0 }) : undefined
             } 
         })
     })

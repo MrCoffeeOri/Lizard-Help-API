@@ -11,6 +11,7 @@ import { createServer } from 'http';
 import Ticket from './models/ticket.model';
 import authRequired from "./middlewares/authRequired";
 import User from './models/user.model';
+import Chat from './models/chats.model';
 
 
 declare module 'http' {
@@ -61,10 +62,10 @@ io.on("connection", socket => {
         socket.data.user = event.user
         socket.join(socket.id)
         if (socket.data.user.companyID) {
-            io.to(socket.data.user.companyID).volatile.emit("user", { action: "avaible", data: { avaible: true, userID: user._id } })
+            io.to(socket.data.user.companyID).volatile.emit("user", { action: "avaible", data: { avaible: true, userID: socket.data.user._id } })
             socket.data.user.type == "owner" && socket.join(socket.data.user.companyID)
         }
-        if (socket.data.user.type == "technician")
+        if (socket.data.user.type == "technician" || socket.data.user.type == "admin")
             socket.join("technician")
     })
 
@@ -72,24 +73,38 @@ io.on("connection", socket => {
         let ticket;
         switch (event.action) {
             case "create":
-                ticket = await Ticket.create({ by: event.data.by, title: event.data.title, description: event.data.description, tags: event.data.tags })
+                ticket = await Ticket.create({ by: event.data.by, title: event.data.title, description: event.data.description, tags: event.data.tags, company: event.data.companyID  })
+                break;
             case "delete":
-                await Ticket.findByIdAndDelete(event.data._id)
+                event.data = await Ticket.findByIdAndDelete(event.data._id)
+                await Chat.findOneAndDelete({ ticket: event.data.companyID })
+                break;
             case "edit":
-                await Ticket.findByIdAndUpdate(event.data._id, { by: event.data.by, title: event.data.title, description: event.data.description, tags: event.data.tags })
+                await Ticket.findByIdAndUpdate(event.data._id, { 
+                    ...(event.data.by ? { by: event.data.by } : {}), 
+                    ...(event.data.title ? { title: event.data.title } : {}), 
+                    ...(event.data.description ? { description: event.data.description } : {}), 
+                    ...(event.data.tags ? { tags: event.data.tags } : {}),
+                    ...(event.data.service ? { service: event.data.service } : {}),
+                    ...(event.data.priority ? { priority: event.data.priority } : {}),
+                    ...(event.data.status ? { status: event.data.status } : {}),
+                    ...(event.data.solved ? { solved: event.data.solved } : {})
+                })
+                break;
         }
-        io.to(socket.id).to(event.data.companyID).to("technician").emit("ticket", { action: event.action, data: event.action == "create" ? ticket.toObject() : event.data })
+        io.to(event.data.companyID).to("technician").emit("ticket", { action: event.action, data: event.action == "create" ? ticket.toObject() : event.data })
     })
 
-    socket.on("chat", event => {
+    socket.on("chat", async event => {
+        let chat;
         switch (event.action) {
             case "create":
-                
+                chat = (await Chat.create({ client: event.data.client, technician: event.data.technician, ticket: event.data.ticket })).toObject()
                 break;
-        
             default:
                 break;
         }
+        io.to(socket.id).to(event.data.companyID).to(event.data.client._id).emit("chat", { action: event.action, data: chat || event.data })
     })
 
     socket.on("disconnect", async () => {

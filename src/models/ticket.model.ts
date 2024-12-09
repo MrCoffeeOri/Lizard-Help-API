@@ -24,6 +24,7 @@ export default model("Tickets", new Schema({
         type: {
             by: Types.ObjectId,
             justification: String,
+            denied: Boolean,
             date: {
                 type: Date,
                 default: Date.now
@@ -53,5 +54,9 @@ export default model("Tickets", new Schema({
         type: String,
         enum: ['high', 'medium', 'low'],
         default: 'low'
+    },
+    company: {
+        type: Types.ObjectId,
+        required: true
     }
 }, { timestamps: true }))

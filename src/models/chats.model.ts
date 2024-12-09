@@ -34,5 +34,9 @@ export default model("Chats", new Schema({
             name: String
         },
         required: true
+    },
+    ticket: {
+        type: Types.ObjectId,
+        require: true
     }
 }, { timestamps: true }))
