@@ -103,7 +103,11 @@ io.on("connection", socket => {
             case "create":
                 chat = (await Chat.create({ client: event.data.client, technician: event.data.technician, ticket: event.data.ticket })).toObject()
                 socket.join(chat._id);
-                (await io.fetchSockets()).find(_socket => _socket.data.user._id == event.data.client._id).join(chat._id)
+                (await io.fetchSockets()).find(_socket => _socket.data.user._id == event.data.client._id)?.join(chat._id)
+                break;
+
+            case "delete":
+                await Chat.findByIdAndDelete(event.data.chatID)
                 break;
 
             case "message":

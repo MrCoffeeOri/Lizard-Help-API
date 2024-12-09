@@ -4,7 +4,6 @@ import User from "../models/user.model";
 import { IUser } from "../types";
 import Ticket from "../models/ticket.model";
 import Chat from "../models/chats.model";
-import { io } from "../server";
 
 export default Router()
     .post("/create", async (req: Request, res: Response) => {
@@ -14,7 +13,7 @@ export default Router()
             return res.status(400).json({ error: "Email já utilizado" })
         const newUser = (await User.create({ email: req.body.email, password: req.body.password, name: req.body.name, type: req.body.type, avaible: req.body.avaible != undefined ? req.body.avaible : true })).toObject()
         if (!req.session.user) req.session.user = newUser as IUser
-        res.status(201).json({ msg: "Usuário criado com sucesso", user: { ...newUser, password: undefined } }) 
+        res.status(201).json({ msg: "Usuário criado com sucesso", user: { ...newUser, chats: [], password: undefined } }) 
     })
     .post("/auth", async (req: Request, res: Response) => {
         const user = (await User.findOneAndUpdate({ email: req.session.user?.email || req.body.email }, { avaible: true }, { new: true }))?.toObject()
