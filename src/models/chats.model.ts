@@ -3,16 +3,12 @@ import { Schema, model, Types } from "mongoose";
 export default model("Chats", new Schema({
     messages: {
         type: [{
-            _id: {
-                type: Types.ObjectId,
-                default: Types.ObjectId.generate
-            },
+            _id: String,
             content: String,
             by: Types.ObjectId,
             createdAt: {
                 type: Date,
                 default: Date.now,
-                immutable: true
             },
             updatedAt: {
                 type: Date,

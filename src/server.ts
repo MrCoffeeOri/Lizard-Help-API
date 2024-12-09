@@ -60,10 +60,12 @@ app.get("/test", (req: Request, res: Response) => res.status(200).json({ msg: "S
 io.on("connection", socket => {
     socket.on("auth", event => {
         socket.data.user = event.user
+        console.log(socket.data.user)
+        event.user.chats.forEach((chat: any) => socket.join(chat._id))
         socket.join(socket.id)
-        if (socket.data.user.companyID) {
-            io.to(socket.data.user.companyID).volatile.emit("user", { action: "avaible", data: { avaible: true, userID: socket.data.user._id } })
-            socket.data.user.type == "owner" && socket.join(socket.data.user.companyID)
+        if (socket.data.user.company?._id) {
+            io.to(socket.data.user.company._id).volatile.emit("user", { action: "avaible", data: { avaible: true, userID: socket.data.user._id } })
+            socket.data.user.type == "owner" && socket.join(socket.data.user.company._id)
         }
         if (socket.data.user.type == "technician" || socket.data.user.type == "admin")
             socket.join("technician")
@@ -100,11 +102,15 @@ io.on("connection", socket => {
         switch (event.action) {
             case "create":
                 chat = (await Chat.create({ client: event.data.client, technician: event.data.technician, ticket: event.data.ticket })).toObject()
+                socket.join(chat._id);
+                (await io.fetchSockets()).find(_socket => _socket.data.user._id == event.data.client._id).join(chat._id)
                 break;
-            default:
+
+            case "message":
+                await Chat.findByIdAndUpdate(event.data.chatID, { $push: { messages: { content: event.data.content, by: event.data.by } } })
                 break;
         }
-        io.to(socket.id).to(event.data.companyID).to(event.data.client._id).emit("chat", { action: event.action, data: chat || event.data })
+        io.to(chat?._id || event.data.chatID).emit("chat", { action: event.action, data: chat || event.data })
     })
 
     socket.on("disconnect", async () => {
